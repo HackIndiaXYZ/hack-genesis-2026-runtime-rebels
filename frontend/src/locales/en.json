@@ -1,0 +1,53 @@
+{
+  "landing": {
+    "badge": "Uttar Pradesh Municipal Portal",
+    "title_1": "Snap a photo.",
+    "title_2": "Report it.",
+    "title_3": "Fixed.",
+    "subtitle": "Help keep our streets safe in Kanpur, Varanasi, and across UP. Snap a photo of the problem — we'll figure out what it is and send it to the right department.",
+    "btn_report": "Report an Issue",
+    "stats_filed": "14,892",
+    "stats_filed_label": "Reports Filed in UP",
+    "stats_resolved": "11,204",
+    "stats_resolved_label": "Issues Fixed",
+    "stats_time": "48h",
+    "stats_time_label": "Avg. Resolution Time",
+    "how_title": "How it works",
+    "step1_title": "1. Upload",
+    "step1_desc": "Take a quick photo of the pothole or broken light.",
+    "step2_title": "2. Locate",
+    "step2_desc": "Confirm the exact street location on the map.",
+    "step3_title": "3. Auto-Route",
+    "step3_desc": "Our system identifies the issue and routes it directly to the local ward officer.",
+    "step4_title": "4. Track",
+    "step4_desc": "Get updates right here until the job is done."
+  },
+  "report": {
+    "title": "Report an Issue",
+    "subtitle": "Upload a photo of a public issue. Our system will analyze it, extract details, and route it instantly.",
+    "evidence": "Evidence",
+    "click_upload": "Click to upload photo",
+    "drag_drop": "or drag and drop",
+    "btn_analyze": "Analyze Photo",
+    "btn_detecting": "Detecting location...",
+    "btn_analyzing": "Processing image...",
+    "btn_complete": "Analysis Complete",
+    "analysis_failed": "Analysis failed:",
+    "upload_placeholder": "Upload a photo and analyze it to see extracted details here.",
+    "location": "Location",
+    "pin_exact": "Pin exact location",
+    "pin_instruction": "Click anywhere on the map to place the pin precisely.",
+    "search_placeholder": "Search address...",
+    "loading_address": "Loading address...",
+    "ai_generated": "Generated Complaint",
+    "btn_submit": "Submit Complaint",
+    "btn_submitting": "Submitting..."
+  },
+  "nav": {
+    "home": "Home",
+    "report": "Report Issue",
+    "track": "Track",
+    "map": "City Map",
+    "dashboard": "Dashboard"
+  }
+}

@@ -1,0 +1,86 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+@layer base {
+  :root {
+    --color-primary: #1A365D;
+    --color-accent: #C05621;
+    --color-warning: #9B6310;
+    --color-critical: #8B0000;
+    --color-success: #556B2F;
+    --color-background: #F5F0E6;
+    --color-surface: #FAF6EE;
+    --color-subtle: #EDE4D3;
+    --color-text-main: #2B2621;
+    --color-text-muted: #6B6456;
+    --color-text-disabled: #9C9585;
+    --color-border-default: #D8CFB8;
+  }
+
+  :root.dark {
+    --color-primary: #60A5FA;
+    --color-accent: #FB923C;
+    --color-warning: #FBBF24;
+    --color-critical: #F87171;
+    --color-success: #4ADE80;
+    --color-background: #0F172A;
+    --color-surface: #1E293B;
+    --color-subtle: #334155;
+    --color-text-main: #F8FAFC;
+    --color-text-muted: #94A3B8;
+    --color-text-disabled: #64748B;
+    --color-border-default: #334155;
+  }
+
+  body {
+    @apply bg-background text-main font-body antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold text-main;
+  }
+
+  /* Universal transition for all elements so switching is smooth */
+  *, *::before, *::after {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  }
+}
+
+@layer components {
+  .civic-card {
+    @apply bg-surface border border-default shadow-civic rounded-md;
+  }
+
+  .btn-primary {
+    @apply bg-primary hover:opacity-90 text-surface font-medium py-2.5 px-5 rounded transition-colors active:scale-[0.98];
+  }
+  
+  .btn-accent {
+    @apply bg-accent hover:opacity-90 text-surface font-medium py-2.5 px-5 rounded transition-colors active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply bg-surface hover:bg-subtle text-main font-medium py-2.5 px-5 rounded transition-colors active:scale-[0.98] border border-default shadow-sm;
+  }
+}
+
+.pulse-marker-custom {
+  border-radius: 50%;
+  position: relative;
+}
+
+/* Map tiles logic */
+.leaflet-tile-pane { 
+  filter: saturate(1.05) brightness(1.02) sepia(0.08) contrast(0.95); 
+  transition: filter 0.3s ease;
+}
+
+.dark .leaflet-tile-pane, 
+.dark .leaflet-control-zoom-in,
+.dark .leaflet-control-zoom-out,
+.dark .leaflet-control-attribution {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+  
+.crosshair-cursor-enabled, .crosshair-cursor-enabled .leaflet-interactive { cursor: crosshair !important; }
