@@ -145,3 +145,40 @@ vite.config.ts.timestamp-*
 venv/
 runs/
 *.zip
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+
+# Build and dependencies
+build/
+dist/
+dist-ssr/
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large model weights
+*.pt
+*.pth
+*.onnx
+
+# Local tools and dev scratch
+tools/
+.pytest_cache/
+*.db
+*.sqlite3
+setup_civicfix_1.py
+setup_civicfix_2.py
+download_node.ps1
+README_local_docs.md
+.gitignore_local
+data/
+civicfix-ai/
+backend/
+
