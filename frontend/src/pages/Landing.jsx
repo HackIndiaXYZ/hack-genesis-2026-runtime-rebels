@@ -1,12 +1,31 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Camera, MapPin, Send, CheckCircle } from 'lucide-react';
+import { Camera, MapPin, Send, CheckCircle, Activity } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LandingDemoCard from '../components/LandingDemoCard';
+import { getStats } from '../api';
 
 export default function Landing() {
   const { t } = useTranslation();
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    getStats()
+      .then(data => {
+        if (isMounted) {
+          setStats(data);
+          setStatsLoading(false);
+        }
+      })
+      .catch(err => {
+        console.warn('Landing live stats fetch fallback:', err);
+        if (isMounted) setStatsLoading(false);
+      });
+    return () => { isMounted = false; };
+  }, []);
 
   return (
     <div className="flex flex-col gap-20 pb-20">
@@ -66,17 +85,23 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="civic-card py-10 px-8 grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left divide-y md:divide-y-0 md:divide-x divide-default">
+      <section className="civic-card py-10 px-8 grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left divide-y md:divide-y-0 md:divide-x divide-default relative">
         <div className="md:px-8">
-          <div className="text-4xl lg:text-5xl font-display font-bold text-main mb-2">{t('landing.stats_filed')}</div>
+          <div className="text-4xl lg:text-5xl font-display font-bold text-main mb-2">
+            {statsLoading ? '...' : (stats ? stats.total.toLocaleString() : t('landing.stats_filed'))}
+          </div>
           <div className="text-disabled text-sm font-medium">{t('landing.stats_filed_label', 'Reports Filed in UP')}</div>
         </div>
         <div className="pt-8 md:pt-0 md:px-8">
-          <div className="text-4xl lg:text-5xl font-display font-bold text-primary mb-2">{t('landing.stats_resolved')}</div>
+          <div className="text-4xl lg:text-5xl font-display font-bold text-primary mb-2">
+            {statsLoading ? '...' : (stats ? stats.resolved.toLocaleString() : t('landing.stats_resolved'))}
+          </div>
           <div className="text-disabled text-sm font-medium">{t('landing.stats_resolved_label', 'Issues Fixed')}</div>
         </div>
         <div className="pt-8 md:pt-0 md:px-8">
-          <div className="text-4xl lg:text-5xl font-display font-bold text-accent mb-2">{t('landing.stats_time')}</div>
+          <div className="text-4xl lg:text-5xl font-display font-bold text-accent mb-2">
+            {statsLoading ? '...' : (stats ? `${stats.avg_resolution_hours}h` : t('landing.stats_time'))}
+          </div>
           <div className="text-disabled text-sm font-medium">{t('landing.stats_time_label', 'Avg. Resolution Time')}</div>
         </div>
       </section>

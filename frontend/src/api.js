@@ -1,144 +1,215 @@
-export const mockComplaints = [
-  {
-    "complaint_id": "CF-0001",
-    "category": "pothole",
-    "confidence": 0.94,
-    "severity": "high",
-    "location": {"lat": 25.311, "lng": 82.973, "address": "123 Main St, Ward 5"},
-    "department": "Road Maintenance",
-    "suggested_action": "Immediate repair required",
-    "complaint_text": "A large pothole has been detected near 123 Main St. It poses a significant risk to vehicles.",
-    "status": "submitted",
-    "duplicate_of": null,
-    "estimated_resolution_hours": 48,
-    "createdAt": new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString()
-  },
-  {
-    "complaint_id": "CF-0002",
-    "category": "overflowing garbage",
-    "confidence": 0.88,
-    "severity": "medium",
-    "location": {"lat": 25.320, "lng": 82.980, "address": "Market Square, Ward 2"},
-    "department": "Sanitation",
-    "suggested_action": "Schedule pickup within 24 hours",
-    "complaint_text": "Overflowing garbage bins detected at Market Square, causing sanitation concerns.",
-    "status": "in progress",
-    "duplicate_of": null,
-    "estimated_resolution_hours": 24,
-    "createdAt": new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString()
-  },
-  {
-    "complaint_id": "CF-0003",
-    "category": "broken streetlight",
-    "confidence": 0.92,
-    "severity": "low",
-    "location": {"lat": 25.315, "lng": 82.975, "address": "Park Ave, Ward 1"},
-    "department": "Electrical",
-    "suggested_action": "Inspect and replace bulb",
-    "complaint_text": "Broken streetlight reported. Area is poorly lit at night.",
-    "status": "resolved",
-    "duplicate_of": null,
-    "estimated_resolution_hours": 72,
-    "createdAt": new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString()
-  },
-  {
-    "complaint_id": "CF-0004",
-    "category": "open manhole",
-    "confidence": 0.99,
-    "severity": "critical",
-    "location": {"lat": 25.305, "lng": 82.965, "address": "School Road, Ward 4"},
-    "department": "Public Works",
-    "suggested_action": "Immediate barricading and cover replacement",
-    "complaint_text": "Dangerous open manhole detected on School Road. High risk to pedestrians.",
-    "status": "assigned",
-    "duplicate_of": null,
-    "estimated_resolution_hours": 12,
-    "createdAt": new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
-  },
-  {
-    "complaint_id": "CF-0005",
-    "category": "water leakage",
-    "confidence": 0.85,
-    "severity": "medium",
-    "location": {"lat": 25.330, "lng": 82.990, "address": "Riverfront, Ward 7"},
-    "department": "Water Supply",
-    "suggested_action": "Dispatch plumber to inspect pipeline",
-    "complaint_text": "Significant water leakage observed on Riverfront.",
-    "status": "submitted",
-    "duplicate_of": null,
-    "estimated_resolution_hours": 36,
-    "createdAt": new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString()
-  },
-  {
-    "complaint_id": "CF-0006",
-    "category": "damaged road sign",
-    "confidence": 0.91,
-    "severity": "low",
-    "location": {"lat": 25.310, "lng": 82.960, "address": "Highway 10 Exit",
-    "department": "Traffic Police",
-    "suggested_action": "Replace speed limit sign",
-    "complaint_text": "Damaged speed limit sign detected at Highway 10 Exit.",
-    "status": "resolved",
-    "duplicate_of": null,
-    "estimated_resolution_hours": 72,
-    "createdAt": new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString()}
-  }
-];
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.origin.includes('localhost') ? 'http://localhost:8000' : '');
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
-
-export const getComplaints = async () => {
-  if (API_BASE_URL) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/complaints`);
-      if (response.ok) return await response.json();
-    } catch (e) {
-      console.warn("Backend fetch failed, falling back to mock data", e);
-    }
+/**
+ * Returns auth headers for admin actions if configured via environment or localStorage.
+ */
+export const getAdminHeaders = () => {
+  const headers = { 'Content-Type': 'application/json' };
+  const adminKey = typeof window !== 'undefined' 
+    ? (sessionStorage.getItem('civicfix_admin_key') || localStorage.getItem('civicfix_admin_key'))
+    : null;
+  if (adminKey) {
+    headers['X-Admin-Key'] = adminKey;
   }
-  return new Promise((resolve) => setTimeout(() => resolve(mockComplaints), 800));
+  return headers;
 };
 
+/**
+ * Resolve full URL for uploaded complaint images (supports both local disk and Cloudinary).
+ */
+export const getImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('data:')) {
+    return imagePath;
+  }
+  const cleanPath = imagePath.replace(/^\//, '');
+  return `${API_BASE_URL}/${cleanPath}`;
+};
+
+/**
+ * Fetch all complaints with optional filters (category, severity, status, limit, offset).
+ */
+export const getComplaints = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (filters.category) params.append('category', filters.category);
+    if (filters.severity) params.append('severity', filters.severity);
+    if (filters.status) params.append('status', filters.status);
+    if (filters.limit) params.append('limit', filters.limit);
+    if (filters.offset) params.append('offset', filters.offset);
+
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${API_BASE_URL}/api/complaints${qs}`);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `HTTP error ${res.status}: ${res.statusText}`);
+    }
+    return await res.json();
+  } catch (err) {
+    console.error('getComplaints failed:', err);
+    throw err;
+  }
+};
+
+/**
+ * Fetch single complaint by ID with full status history.
+ */
 export const getComplaint = async (id) => {
-  if (API_BASE_URL) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/complaints/${id}`);
-      if (response.ok) return await response.json();
-    } catch (e) {
-      console.warn("Backend fetch failed, falling back to mock data", e);
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/complaints/${encodeURIComponent(id)}`);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `Complaint ${id} not found (${res.status})`);
     }
+    return await res.json();
+  } catch (err) {
+    console.error(`getComplaint(${id}) failed:`, err);
+    throw err;
   }
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const complaint = mockComplaints.find(c => c.complaint_id === id);
-      if (complaint) resolve(complaint);
-      else reject(new Error("Complaint not found"));
-    }, 500);
-  });
 };
 
-export const submitComplaint = async (data) => {
-  if (API_BASE_URL) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/analyze`, {
-        method: "POST",
-        body: data // assuming FormData
-      });
-      if (response.ok) return await response.json();
-    } catch (e) {
-      console.warn("Backend fetch failed, falling back to mock data", e);
+/**
+ * Send image, GPS location, and language to AI pipeline for analysis.
+ * Returns preview complaint draft without saving to DB yet.
+ */
+export const analyzeIssue = async (formData) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/analyze`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `Analysis failed (${res.status})`);
     }
+    return await res.json();
+  } catch (err) {
+    console.error('analyzeIssue failed:', err);
+    throw err;
   }
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const newComplaint = {
-        complaint_id: `CF-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
-        ...data,
-        status: "submitted",
-        createdAt: new Date().toISOString()
-      };
-      mockComplaints.unshift(newComplaint);
-      resolve(newComplaint);
-    }, 1500);
-  });
+};
+
+/**
+ * Save confirmed complaint to database.
+ */
+export const submitComplaint = async (complaintData) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/complaints`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(complaintData),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `Submission failed (${res.status})`);
+    }
+    return await res.json();
+  } catch (err) {
+    console.error('submitComplaint failed:', err);
+    throw err;
+  }
+};
+
+/**
+ * Admin status update (submitted, assigned, in_progress, resolved, rejected).
+ * Supports optional department reassignment and admin API key header.
+ */
+export const updateComplaintStatus = async (complaintId, newStatus, note = '', department = null) => {
+  try {
+    const payload = { status: newStatus, note };
+    if (department) payload.department = department;
+
+    const res = await fetch(`${API_BASE_URL}/api/complaints/${encodeURIComponent(complaintId)}/status`, {
+      method: 'PATCH',
+      headers: getAdminHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `Status update failed (${res.status})`);
+    }
+    return await res.json();
+  } catch (err) {
+    console.error('updateComplaintStatus failed:', err);
+    throw err;
+  }
+};
+
+/**
+ * Admin department assignment.
+ */
+export const assignComplaintDepartment = async (complaintId, department, note = '') => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/complaints/${encodeURIComponent(complaintId)}/department`, {
+      method: 'PATCH',
+      headers: getAdminHeaders(),
+      body: JSON.stringify({ department, note }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `Department reassignment failed (${res.status})`);
+    }
+    return await res.json();
+  } catch (err) {
+    console.error('assignComplaintDepartment failed:', err);
+    throw err;
+  }
+};
+
+/**
+ * Upvote an existing complaint (used in duplicate detection flow).
+ */
+export const upvoteComplaint = async (complaintId) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/complaints/${encodeURIComponent(complaintId)}/upvote`, {
+      method: 'POST',
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `Upvote failed (${res.status})`);
+    }
+    return await res.json();
+  } catch (err) {
+    console.error('upvoteComplaint failed:', err);
+    throw err;
+  }
+};
+
+/**
+ * Fetch aggregated city analytics and KPI counts.
+ */
+export const getStats = async () => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/stats`);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `Failed to fetch stats (${res.status})`);
+    }
+    return await res.json();
+  } catch (err) {
+    console.error('getStats failed:', err);
+    throw err;
+  }
+};
+
+/**
+ * Regenerate complaint text in selected language or updated location.
+ */
+export const generateComplaintText = async (category, severity, address, language = 'en') => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/generate-complaint`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category, severity, address, language }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `Failed to generate text (${res.status})`);
+    }
+    const data = await res.json();
+    return data.complaint_text;
+  } catch (err) {
+    console.error('generateComplaintText failed:', err);
+    return null;
+  }
 };

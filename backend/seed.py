@@ -1,0 +1,501 @@
+"""
+CivicFix AI — Database Seeder
+Inserts 22+ realistic complaints located in Kanpur and Varanasi with varied
+severity, status, confidence, departments, coordinates, and status timelines.
+"""
+
+from datetime import datetime, timezone, timedelta
+from app.db import SessionLocal, engine, Base
+from app.models.complaint import Complaint
+from app.models.status_history import StatusHistory
+
+Base.metadata.create_all(bind=engine)
+
+SAMPLE_COMPLAINTS = [
+    # --- KANPUR COMPLAINTS ---
+    {
+        "complaint_id": "CF-2026-00847",
+        "category": "pothole",
+        "confidence": 0.94,
+        "severity": "high",
+        "lat": 26.4729,
+        "lng": 80.3498,
+        "address": "Civil Lines, Near VIP Road, Ward 12, Kanpur",
+        "department": "Road Maintenance (PWD)",
+        "suggested_action": "Immediate cold-mix asphalt patch repair required.",
+        "complaint_text": "Severe road cavity measuring approximately 1.2m across near Civil Lines junction. Substantial hazard to two-wheelers.",
+        "language": "en",
+        "status": "assigned",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 24,
+        "upvotes": 3,
+        "days_ago": 2,
+    },
+    {
+        "complaint_id": "CF-2026-00848",
+        "category": "pothole",
+        "confidence": 0.91,
+        "severity": "high",
+        "lat": 26.4731,
+        "lng": 80.3501,
+        "address": "Opposite Green Park Stadium Gate 2, Civil Lines, Kanpur",
+        "department": "Road Maintenance (PWD)",
+        "suggested_action": "Deep pothole filling and road surface leveling.",
+        "complaint_text": "Large road crater directly outside Stadium Gate 2 causing slow traffic and bike skidding.",
+        "language": "en",
+        "status": "in_progress",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 24,
+        "upvotes": 7,
+        "days_ago": 3,
+    },
+    {
+        "complaint_id": "CF-2026-00849",
+        "category": "pothole",
+        "confidence": 0.88,
+        "severity": "high",
+        "lat": 26.4730,
+        "lng": 80.3500,
+        "address": "VIP Road, 30m from Stadium Gate 2, Kanpur",
+        "department": "Road Maintenance (PWD)",
+        "suggested_action": "Merge with existing complaint CF-2026-00848.",
+        "complaint_text": "Dangerous pit on the main road outside Green park stadium.",
+        "language": "en",
+        "status": "assigned",
+        "duplicate_of": "CF-2026-00848",
+        "estimated_resolution_hours": 24,
+        "upvotes": 1,
+        "days_ago": 1,
+    },
+    {
+        "complaint_id": "CF-2026-00850",
+        "category": "open manhole",
+        "confidence": 0.98,
+        "severity": "critical",
+        "lat": 26.4812,
+        "lng": 80.3125,
+        "address": "Kakadeo Coaching Hub, Near Deoki Cinema, Ward 18, Kanpur",
+        "department": "Public Works & Drainage",
+        "suggested_action": "Emergency steel barricading and immediate chamber slab replacement.",
+        "complaint_text": "Uncovered drainage manhole in high-density student pedestrian zone. Immediate risk of fatal accident.",
+        "language": "en",
+        "status": "in_progress",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 12,
+        "upvotes": 12,
+        "days_ago": 1,
+    },
+    {
+        "complaint_id": "CF-2026-00851",
+        "category": "overflowing garbage",
+        "confidence": 0.86,
+        "severity": "medium",
+        "lat": 26.4950,
+        "lng": 80.2980,
+        "address": "Kalyanpur Main Market, GT Road, Ward 24, Kanpur",
+        "department": "Municipal Sanitation",
+        "suggested_action": "Dispatch primary waste lifter compactor truck.",
+        "complaint_text": "Community dumpsters overflowing onto road for past 3 days. Foul stench and stray animal congregation.",
+        "language": "en",
+        "status": "submitted",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 36,
+        "upvotes": 2,
+        "days_ago": 0,
+    },
+    {
+        "complaint_id": "CF-2026-00852",
+        "category": "broken streetlight",
+        "confidence": 0.92,
+        "severity": "low",
+        "lat": 26.4680,
+        "lng": 80.3250,
+        "address": "Swaroop Nagar, Near Medical College, Ward 8, Kanpur",
+        "department": "Municipal Electrical Dept",
+        "suggested_action": "Replace blown photocell sensor and 70W LED driver.",
+        "complaint_text": "Streetlight pole #SN-42 dark for 5 consecutive nights. Alleyway unsafe for female evening commuters.",
+        "language": "en",
+        "status": "resolved",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 48,
+        "upvotes": 4,
+        "days_ago": 7,
+    },
+    {
+        "complaint_id": "CF-2026-00853",
+        "category": "water leakage",
+        "confidence": 0.89,
+        "severity": "high",
+        "lat": 26.4350,
+        "lng": 80.3340,
+        "address": "Govind Nagar Water Tank Road, Sector 3, Kanpur",
+        "department": "Jal Sansthan (Water Board)",
+        "suggested_action": "Trench excavation and pipe collar clamping.",
+        "complaint_text": "Potable main distribution line ruptured; clean water flooding street and reducing household pressure.",
+        "language": "hi",
+        "complaint_text": "गोविंद नगर सेक्टर 3 में मुख्य जलापूर्ति पाइपलाइन फट गई है। सड़क पर भारी जलभराव हो रहा है।",
+        "status": "in_progress",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 18,
+        "upvotes": 9,
+        "days_ago": 1,
+    },
+    {
+        "complaint_id": "CF-2026-00854",
+        "category": "damaged road sign",
+        "confidence": 0.83,
+        "severity": "low",
+        "lat": 26.4610,
+        "lng": 80.3580,
+        "address": "Mall Road, Near Phoolbagh Crossing, Kanpur",
+        "department": "Traffic Police / PWD",
+        "suggested_action": "Realign and bolt bent overhead directional sign.",
+        "complaint_text": "Direction sign knocked by truck, hanging precarious above bus stop.",
+        "language": "en",
+        "status": "resolved",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 72,
+        "upvotes": 0,
+        "days_ago": 10,
+    },
+    {
+        "complaint_id": "CF-2026-00855",
+        "category": "overflowing garbage",
+        "confidence": 0.87,
+        "severity": "medium",
+        "lat": 26.4420,
+        "lng": 80.3010,
+        "address": "Barra Bypass, Sector 4 Market, Kanpur",
+        "department": "Municipal Sanitation",
+        "suggested_action": "Sanitation sweep and container relocation.",
+        "complaint_text": "Plastic waste and food refuse scattered over 40 meters of drainage lane.",
+        "language": "en",
+        "status": "submitted",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 24,
+        "upvotes": 2,
+        "days_ago": 0,
+    },
+    {
+        "complaint_id": "CF-2026-00856",
+        "category": "pothole",
+        "confidence": 0.76,
+        "severity": "medium",
+        "lat": 26.4580,
+        "lng": 80.3150,
+        "address": "Gumti No. 5 Crossing Road, Ward 15, Kanpur",
+        "department": "Road Maintenance (PWD)",
+        "suggested_action": "Bitumen patch and compaction.",
+        "complaint_text": "Series of surface holes around railway crossing causing bottleneck slowdowns.",
+        "language": "en",
+        "status": "assigned",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 48,
+        "upvotes": 5,
+        "days_ago": 4,
+    },
+    {
+        "complaint_id": "CF-2026-00857",
+        "category": "pothole",
+        "confidence": 0.72,
+        "severity": "low",
+        "lat": 26.4380,
+        "lng": 80.3420,
+        "address": "Kidwai Nagar Block H, Kanpur",
+        "department": "Road Maintenance (PWD)",
+        "suggested_action": "Routine residential road resurfacing.",
+        "complaint_text": "Minor road chipping and shallow indentation after monsoon.",
+        "language": "en",
+        "status": "rejected",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 96,
+        "upvotes": 0,
+        "days_ago": 6,
+    },
+
+    # --- VARANASI COMPLAINTS ---
+    {
+        "complaint_id": "CF-2026-00858",
+        "category": "open manhole",
+        "confidence": 0.99,
+        "severity": "critical",
+        "lat": 25.2818,
+        "lng": 82.9984,
+        "address": "Lanka Main Road, Opposite BHU Gate, Ward 3, Varanasi",
+        "department": "Public Works & Drainage",
+        "suggested_action": "Urgent deployment of safety marker cones and cast iron manhole cover.",
+        "complaint_text": "Deep open storm drain lid missing on the primary avenue to BHU. Immediate danger in evening crowds.",
+        "language": "en",
+        "status": "assigned",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 12,
+        "upvotes": 14,
+        "days_ago": 1,
+    },
+    {
+        "complaint_id": "CF-2026-00859",
+        "category": "pothole",
+        "confidence": 0.93,
+        "severity": "high",
+        "lat": 25.3090,
+        "lng": 83.0060,
+        "address": "Godowlia Chowk Approach, Dashashwamedh Ward, Varanasi",
+        "department": "Road Maintenance (PWD)",
+        "suggested_action": "Stone aggregate leveling and hot asphalt seal.",
+        "complaint_text": "Massive pothole near pilgrim route causing e-rickshaws to topple.",
+        "language": "hi",
+        "complaint_text": "गोदौलिया चौक के पास बड़ा गड्ढा तीर्थयात्रियों और वाहनों के लिए खतरनाक बना हुआ है।",
+        "status": "in_progress",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 24,
+        "upvotes": 18,
+        "days_ago": 2,
+    },
+    {
+        "complaint_id": "CF-2026-00860",
+        "category": "broken streetlight",
+        "confidence": 0.95,
+        "severity": "medium",
+        "lat": 25.2880,
+        "lng": 83.0030,
+        "address": "Assi Ghat Promenade, Near Ganga Aarti Stage, Varanasi",
+        "department": "Municipal Electrical Dept",
+        "suggested_action": "Inspect heritage street lamp wiring and replace photocell.",
+        "complaint_text": "Three heritage lamps non-functional along Assi riverfront walkway.",
+        "language": "en",
+        "status": "resolved",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 36,
+        "upvotes": 8,
+        "days_ago": 8,
+    },
+    {
+        "complaint_id": "CF-2026-00861",
+        "category": "overflowing garbage",
+        "confidence": 0.89,
+        "severity": "high",
+        "lat": 25.3170,
+        "lng": 82.9860,
+        "address": "Sigra Stadium Road, Near Rathyatra Crossing, Varanasi",
+        "department": "Municipal Sanitation",
+        "suggested_action": "Deploy sanitation crew and sanitize container area.",
+        "complaint_text": "Commercial garbage overflowing onto cycle track. Obstructing morning school commuters.",
+        "language": "en",
+        "status": "in_progress",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 18,
+        "upvotes": 6,
+        "days_ago": 2,
+    },
+    {
+        "complaint_id": "CF-2026-00862",
+        "category": "water leakage",
+        "confidence": 0.91,
+        "severity": "medium",
+        "lat": 25.2970,
+        "lng": 82.9920,
+        "address": "Bhelupur, Near Jal Sansthan Head Office, Varanasi",
+        "department": "Jal Sansthan (Water Board)",
+        "suggested_action": "Pressure valve replacement and underground line repair.",
+        "complaint_text": "High-pressure clean water jet spurting from road valve chamber into storm drain.",
+        "language": "en",
+        "status": "submitted",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 30,
+        "upvotes": 3,
+        "days_ago": 0,
+    },
+    {
+        "complaint_id": "CF-2026-00863",
+        "category": "pothole",
+        "confidence": 0.87,
+        "severity": "medium",
+        "lat": 25.3340,
+        "lng": 82.9800,
+        "address": "Varanasi Cantonment Railway Station Outer Approach, Varanasi",
+        "department": "Road Maintenance (PWD)",
+        "suggested_action": "Patching and drainage slope re-grading.",
+        "complaint_text": "Broken road surface directly at station auto-rickshaw entry lane.",
+        "language": "en",
+        "status": "assigned",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 48,
+        "upvotes": 11,
+        "days_ago": 3,
+    },
+    {
+        "complaint_id": "CF-2026-00864",
+        "category": "damaged road sign",
+        "confidence": 0.84,
+        "severity": "low",
+        "lat": 25.3710,
+        "lng": 83.0230,
+        "address": "Sarnath Museum Ring Road, Varanasi",
+        "department": "Traffic Police / PWD",
+        "suggested_action": "Erect new tourist information and speed control sign.",
+        "complaint_text": "Tourist guidance signboard vandalized and illegible.",
+        "language": "en",
+        "status": "resolved",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 72,
+        "upvotes": 2,
+        "days_ago": 12,
+    },
+    {
+        "complaint_id": "CF-2026-00865",
+        "category": "broken streetlight",
+        "confidence": 0.90,
+        "severity": "medium",
+        "lat": 25.3280,
+        "lng": 82.9650,
+        "address": "Mahmoorganj Main Road, Opposite Akashvani, Varanasi",
+        "department": "Municipal Electrical Dept",
+        "suggested_action": "Line insulation repair and bulb replacement.",
+        "complaint_text": "Flickering streetlight creating strobe hazard for night drivers.",
+        "language": "en",
+        "status": "submitted",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 48,
+        "upvotes": 1,
+        "days_ago": 1,
+    },
+    {
+        "complaint_id": "CF-2026-00866",
+        "category": "overflowing garbage",
+        "confidence": 0.88,
+        "severity": "medium",
+        "lat": 25.3410,
+        "lng": 82.9910,
+        "address": "Orderly Bazar Market Lane, Ward 6, Varanasi",
+        "department": "Municipal Sanitation",
+        "suggested_action": "Clear market vegetable waste and apply lime powder.",
+        "complaint_text": "Vegetable and commercial wet waste accumulation blocking secondary alley.",
+        "language": "en",
+        "status": "in_progress",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 24,
+        "upvotes": 4,
+        "days_ago": 2,
+    },
+    {
+        "complaint_id": "CF-2026-00867",
+        "category": "pothole",
+        "confidence": 0.96,
+        "severity": "high",
+        "lat": 25.3050,
+        "lng": 83.0120,
+        "address": "Madanpura Weaver Colony, Varanasi",
+        "department": "Road Maintenance (PWD)",
+        "suggested_action": "Urgent stone filling and cement concrete topping.",
+        "complaint_text": "Deep depression collapsed into an old stone conduit.",
+        "language": "en",
+        "status": "submitted",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 36,
+        "upvotes": 5,
+        "days_ago": 0,
+    },
+    {
+        "complaint_id": "CF-2026-00868",
+        "category": "water leakage",
+        "confidence": 0.82,
+        "severity": "low",
+        "lat": 25.2920,
+        "lng": 82.9780,
+        "address": "Khojwan Brass Market, Varanasi",
+        "department": "Jal Sansthan (Water Board)",
+        "suggested_action": "Inspect tap connection and tighten street hydrant gland.",
+        "complaint_text": "Slow steady seepage from municipal roadside water tap.",
+        "language": "en",
+        "status": "resolved",
+        "duplicate_of": None,
+        "estimated_resolution_hours": 48,
+        "upvotes": 1,
+        "days_ago": 14,
+    }
+]
+
+def seed_database():
+    db = SessionLocal()
+    try:
+        # Clear existing data to avoid duplicates on re-run
+        db.query(StatusHistory).delete()
+        db.query(Complaint).delete()
+        db.commit()
+
+        print(f"Seeding {len(SAMPLE_COMPLAINTS)} realistic civic complaints...")
+
+        now = datetime.now(timezone.utc)
+
+        for c_data in SAMPLE_COMPLAINTS:
+            created_dt = now - timedelta(days=c_data["days_ago"], hours=c_data["days_ago"]*2)
+            updated_dt = created_dt + timedelta(hours=6) if c_data["status"] != "submitted" else created_dt
+
+            complaint = Complaint(
+                complaint_id=c_data["complaint_id"],
+                category=c_data["category"],
+                confidence=c_data["confidence"],
+                severity=c_data["severity"],
+                latitude=c_data["lat"],
+                longitude=c_data["lng"],
+                address=c_data["address"],
+                department=c_data["department"],
+                suggested_action=c_data["suggested_action"],
+                complaint_text=c_data["complaint_text"],
+                language=c_data["language"],
+                status=c_data["status"],
+                duplicate_of=c_data["duplicate_of"],
+                estimated_resolution_hours=c_data["estimated_resolution_hours"],
+                image_path=None,
+                upvotes=c_data["upvotes"],
+                created_at=created_dt,
+                updated_at=updated_dt
+            )
+            db.add(complaint)
+            db.flush()
+
+            # Generate realistic Status Timeline
+            status_seq = []
+            st = c_data["status"]
+            if st == "submitted":
+                status_seq = [("submitted", created_dt, "Complaint filed by citizen with AI detection verification.")]
+            elif st == "assigned":
+                status_seq = [
+                    ("submitted", created_dt, "Complaint filed by citizen with AI detection verification."),
+                    ("assigned", created_dt + timedelta(hours=3), f"Routed to {c_data['department']} control center.")
+                ]
+            elif st == "in_progress":
+                status_seq = [
+                    ("submitted", created_dt, "Complaint filed by citizen with AI detection verification."),
+                    ("assigned", created_dt + timedelta(hours=2), f"Routed to {c_data['department']} control center."),
+                    ("in_progress", created_dt + timedelta(hours=8), "Field engineering team dispatched to the location.")
+                ]
+            elif st == "resolved":
+                status_seq = [
+                    ("submitted", created_dt, "Complaint filed by citizen with AI detection verification."),
+                    ("assigned", created_dt + timedelta(hours=2), f"Routed to {c_data['department']} control center."),
+                    ("in_progress", created_dt + timedelta(hours=6), "Field engineering team dispatched to the location."),
+                    ("resolved", created_dt + timedelta(hours=c_data["estimated_resolution_hours"]-4), "Repairs completed and validated via inspection.")
+                ]
+            elif st == "rejected":
+                status_seq = [
+                    ("submitted", created_dt, "Complaint filed by citizen with AI detection verification."),
+                    ("rejected", created_dt + timedelta(hours=12), "Issue evaluated as below municipal intervention threshold.")
+                ]
+
+            for s_name, s_time, s_note in status_seq:
+                h = StatusHistory(
+                    complaint_id=c_data["complaint_id"],
+                    status=s_name,
+                    timestamp=s_time,
+                    note=s_note
+                )
+                db.add(h)
+
+        db.commit()
+        print(f"Successfully seeded {len(SAMPLE_COMPLAINTS)} complaints with timeline histories!")
+    finally:
+        db.close()
+
+if __name__ == "__main__":
+    seed_database()

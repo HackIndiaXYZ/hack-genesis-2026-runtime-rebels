@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: civicfix-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: PORT
+        value: 10000
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ALLOWED_ORIGINS
+        sync: false
+        # Example: https://civicfix.vercel.app,http://localhost:5173
+      - key: DATABASE_URL
+        sync: false
+        # Example: postgresql://postgres.xxxx:password@aws-0-region.pooler.supabase.com:5432/postgres?sslmode=require
+      - key: ADMIN_API_KEY
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
+      - key: CLOUDINARY_URL
+        sync: false
+        # Example: cloudinary://API_KEY:API_SECRET@CLOUD_NAME

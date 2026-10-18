@@ -20,7 +20,7 @@ from pathlib import Path
 CATEGORIES = ["pothole", "open_manhole"]
 SEVERITIES = ["Low", "Medium", "High"]
 
-VLM_MODEL = "gemini-3.8-flash"
+VLM_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
 _VALID_CATEGORIES = set(CATEGORIES)
 _VALID_SEVERITIES = set(SEVERITIES)

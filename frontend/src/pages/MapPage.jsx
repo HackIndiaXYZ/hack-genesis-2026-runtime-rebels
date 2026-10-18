@@ -6,7 +6,7 @@ import { getComplaints } from '../api';
 import L from 'leaflet';
 import SeverityBadge from '../components/SeverityBadge';
 import { Link } from 'react-router-dom';
-import { Navigation } from 'lucide-react';
+import { Navigation, Loader2 } from 'lucide-react';
 
 const severityColors = {
   low: '#00E5C3', // teal
@@ -16,8 +16,7 @@ const severityColors = {
 };
 
 const createCustomIcon = (severity) => {
-  const color = severityColors[severity] || '#60A5FA';
-  // convert hex to rgba for the pulse shadow
+  const color = severityColors[severity?.toLowerCase()] || '#60A5FA';
   let rgba = 'rgba(96, 165, 250, 0.7)';
   if (color === '#00E5C3') rgba = 'rgba(0, 229, 195, 0.7)';
   else if (color === '#FFB020') rgba = 'rgba(255, 176, 32, 0.7)';
@@ -35,8 +34,8 @@ function LocateMeButton() {
   const map = useMap();
   const handleLocate = () => {
     navigator.geolocation.getCurrentPosition((pos) => {
-      map.flyTo([pos.coords.latitude, pos.coords.longitude], 16, { duration: 1.5 });
-    }, () => alert("Could not get your location. Please check your browser permissions."));
+      map.flyTo([pos.coords.latitude, pos.coords.longitude], 15, { duration: 1.5 });
+    }, () => alert("Could not get your location. Please check browser permissions."));
   };
   return (
     <button 
@@ -53,15 +52,25 @@ export default function MapPage() {
   const [complaints, setComplaints] = useState([]);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [filters, setFilters] = useState({ category: '', severity: '', status: '' });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    getComplaints().then(setComplaints);
+    setIsLoading(true);
+    getComplaints({ limit: 100 })
+      .then(data => {
+        setComplaints(data || []);
+      })
+      .catch(err => {
+        console.error('Failed to load map complaints:', err);
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
   const filteredComplaints = complaints.filter(c => {
-    if (filters.category && c.category !== filters.category) return false;
-    if (filters.severity && c.severity !== filters.severity) return false;
-    if (filters.status && c.status !== filters.status) return false;
+    if (!c.location?.lat || !c.location?.lng) return false;
+    if (filters.category && c.category?.toLowerCase() !== filters.category.toLowerCase()) return false;
+    if (filters.severity && c.severity?.toLowerCase() !== filters.severity.toLowerCase()) return false;
+    if (filters.status && c.status?.toLowerCase() !== filters.status.toLowerCase()) return false;
     return true;
   });
 
@@ -76,9 +85,9 @@ export default function MapPage() {
         >
           <option value="">All Categories</option>
           <option value="pothole">Pothole</option>
+          <option value="open manhole">Open Manhole</option>
           <option value="overflowing garbage">Overflowing Garbage</option>
           <option value="broken streetlight">Broken Streetlight</option>
-          <option value="open manhole">Open Manhole</option>
           <option value="water leakage">Water Leakage</option>
           <option value="damaged road sign">Damaged Road Sign</option>
         </select>
@@ -103,18 +112,24 @@ export default function MapPage() {
           <option value="">All Statuses</option>
           <option value="submitted">Submitted</option>
           <option value="assigned">Assigned</option>
-          <option value="in progress">In Progress</option>
+          <option value="in_progress">In Progress</option>
           <option value="resolved">Resolved</option>
+          <option value="rejected">Rejected</option>
         </select>
+
+        {isLoading && (
+          <div className="bg-surface border border-default text-primary px-3 py-2 rounded-lg text-sm flex items-center gap-1.5 shadow-sm">
+            <Loader2 className="w-4 h-4 animate-spin" /> Loading...
+          </div>
+        )}
       </div>
 
       <div className="w-full h-full relative z-0">
         <MapContainer 
-          center={[25.317, 82.973]} 
-          zoom={13} 
+          center={[26.4729, 80.3498]} 
+          zoom={12} 
           style={{ height: '100%', width: '100%', background: '#f8fafc' }}
         >
-          {/* Free OpenStreetMap tiles, no API key ever required — do not switch to CARTO/Mapbox/Stadia without adding a key. */}
           <TileLayer
             url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -142,23 +157,24 @@ export default function MapPage() {
         <div className="absolute bottom-0 left-0 right-0 md:top-16 md:right-4 md:left-auto md:bottom-auto w-full md:w-80 bg-surface shadow-xl p-5 z-[1000] rounded-b-none md:rounded-md border border-default m-0">
           <div className="flex justify-between items-start mb-3">
             <div>
-              <span className="font-mono text-xs text-primary mb-1 block">{selectedComplaint.complaint_id}</span>
-              <h3 className="text-lg font-bold capitalize leading-tight text-main">{selectedComplaint.category}</h3>
+              <span className="font-mono text-xs text-primary mb-1 block font-bold">{selectedComplaint.complaint_id}</span>
+              <h3 className="text-lg font-bold capitalize leading-tight text-main font-display">{selectedComplaint.category}</h3>
             </div>
-            <button onClick={() => setSelectedComplaint(null)} className="text-muted hover:text-muted">&times;</button>
+            <button onClick={() => setSelectedComplaint(null)} className="text-muted hover:text-main text-lg">&times;</button>
           </div>
           
           <SeverityBadge level={selectedComplaint.severity} className="mb-4" />
           
-          <div className="text-xs text-muted mb-4 bg-subtle p-2 rounded-lg line-clamp-2 border border-default">
-            {selectedComplaint.location.address}
+          <div className="text-xs text-muted mb-4 bg-subtle p-2.5 rounded-lg line-clamp-2 border border-default">
+            {selectedComplaint.location?.address}
           </div>
 
           <div className="flex justify-between items-center mb-4">
-             <span className="text-xs text-disabled capitalize">Status: <strong className="text-main">{selectedComplaint.status}</strong></span>
+             <span className="text-xs text-disabled capitalize">Status: <strong className="text-main capitalize">{selectedComplaint.status?.replace('_', ' ')}</strong></span>
+             <span className="text-xs text-muted font-medium">{selectedComplaint.department}</span>
           </div>
           
-          <Link to="/track" className="btn-primary text-sm w-full block text-center py-2">View Full Details</Link>
+          <Link to={`/track?id=${encodeURIComponent(selectedComplaint.complaint_id)}`} className="btn-primary text-sm w-full block text-center py-2 font-semibold">View Full Timeline</Link>
         </div>
       )}
     </div>
