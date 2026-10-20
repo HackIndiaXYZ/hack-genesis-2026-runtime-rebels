@@ -289,9 +289,46 @@ def test_database_url_validation_production_valid_postgres():
         raw_url="postgres://mock_user:mock_password@aws-0.pooler.supabase.com:5432/postgres",
         environment="production"
     )
-    assert url.startswith("postgresql://")
+    assert url.startswith("postgresql+psycopg2://")
     assert kwargs.get("pool_recycle") == 300
     assert kwargs.get("pool_pre_ping") is True
+
+
+def test_database_url_normalization_plain_postgresql_and_ssl():
+    from app.db import validate_and_resolve_database_url
+    url, kwargs = validate_and_resolve_database_url(
+        raw_url="postgresql://mock_user:mock_password@aws-0.pooler.supabase.com:5432/postgres?sslmode=require&connect_timeout=10",
+        environment="production"
+    )
+    assert url.startswith("postgresql+psycopg2://")
+    assert "sslmode=require" in url
+    assert "connect_timeout=10" in url
+    assert kwargs.get("pool_recycle") == 300
+
+
+def test_database_url_normalization_driver_qualified_preserved():
+    from app.db import validate_and_resolve_database_url
+    # Ensure existing driver schemes are not modified or corrupted
+    url_asyncpg, _ = validate_and_resolve_database_url(
+        raw_url="postgresql+asyncpg://mock_user:mock_password@host:5432/postgres",
+        environment="production"
+    )
+    assert url_asyncpg.startswith("postgresql+asyncpg://")
+
+    url_psycopg2, _ = validate_and_resolve_database_url(
+        raw_url="postgresql+psycopg2://mock_user:mock_password@host:5432/postgres",
+        environment="production"
+    )
+    assert url_psycopg2.startswith("postgresql+psycopg2://")
+
+
+def test_database_url_normalization_password_not_blindly_replaced():
+    from app.db import validate_and_resolve_database_url
+    # Password containing substring 'postgres://' or 'postgresql://' must not be corrupted
+    raw = "postgresql://user:p@ss_postgres://_word@host:5432/db"
+    url, _ = validate_and_resolve_database_url(raw_url=raw, environment="production")
+    assert url.startswith("postgresql+psycopg2://")
+    assert "p@ss_postgres://_word" in url
 
 def test_database_url_validation_dev_mode():
     from app.db import validate_and_resolve_database_url
